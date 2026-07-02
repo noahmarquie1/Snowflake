@@ -64,7 +64,7 @@ class PointCloudSolver:
         ny = sample_sdf(grid=grad_y, this=this, min_p=min_p, max_p=max_p)
         normal = jnp.array([nx, ny])
 
-        dist_sq = dist ** 2    
+        dist_sq = dist ** 2
         mag = (dist_sq + 1e-9) ** -3
         force = -mag * R * normal
         return force
@@ -93,8 +93,8 @@ class PointCloudSolver:
         max_y = center_y + offset
 
         pos = rng.uniform(
-            [min_x, min_y], 
-            [max_x, max_y], 
+            [min_x, min_y],
+            [max_x, max_y],
             size=(self.n_bodies, 2)
         )
 
@@ -104,7 +104,7 @@ class PointCloudSolver:
 
         state = np.concatenate((pos, vel))
         return jnp.array(state)
-    
+
 
     def find_max_vel_at_state(self, state):
         vel_series = state[self.n_bodies:, :]
@@ -113,7 +113,7 @@ class PointCloudSolver:
         return max_vel
 
 
-    def calculate_derivatives(self, state): 
+    def calculate_derivatives(self, state):
         state = state.reshape(-1, 2)
         num_bodies = int(state.shape[0] / 2)
         pos_i = state[:num_bodies]
@@ -134,6 +134,9 @@ class PointCloudSolver:
 
     def solve(self, state0=None, steps=5, out=None):
         state0 = self.generate_random_initial_state() if state0 is None else state0
+        if self.n_bodies == 0:
+            return np.array([state0])
+
         print(f"Beginning simulation. - {int(state0.shape[0] / 2)} particles")
         y0 = state0.flatten()
 
@@ -161,7 +164,7 @@ class PointCloudSolver:
                         iter = max(0, iter)
                         if self.find_max_vel_at_state(self.solution[iter]) > self.vel_threshold:
                             all_below = False
-                    
+
                     if all_below:
                         print(f"Convergence Reached ({i+1}/{steps})")
                         self.solution = self.solution[:(i+1)]
@@ -175,7 +178,7 @@ class PointCloudSolver:
         if self.solution.shape[0] == 0:
             print("No solution to animate.")
             return
-        
+
         if out:
             self.anim.out = out
 
@@ -207,4 +210,3 @@ if __name__ == '__main__':
     )
     solver.solve(h=h, steps=steps)
     solver.animate()
-

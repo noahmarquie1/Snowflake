@@ -85,32 +85,35 @@ def generate(csv, static, step_size, out):
     plt.savefig(plot_out)
     print(f"Plot saved to {plot_out}.")
 
+    stats_points = None
     if depth:
         z_max = depth / 2
         z_min = -depth / 2
         n_wall_steps = int((z_max - z_min) / step_size)
 
-        top_face = np.column_stack([mesh.global_inner_points, np.full(len(mesh.global_inner_points), z_max)])
-        bottom_face = np.column_stack([mesh.global_inner_points, np.full(len(mesh.global_inner_points), z_min)])
+        face = mesh.global_inner_points
+        if not static:
+            face = np.concatenate([face, np.vstack([dynamic_region.filled_points for dynamic_region in mesh.dynamic_regions])], axis=0)
+
+
+        top_face = np.column_stack([face, np.full(face.shape[0], z_max)])
+        bottom_face = np.column_stack([face, np.full(face.shape[0], z_min)])
         walls = extrude(mesh.global_boundary_points, n_wall_steps, z_min, z_max)
         all_points = np.vstack([top_face, bottom_face, walls])
 
-        points_df = pd.DataFrame(all_points)
-        points_df.to_csv(
-            "out/points.csv",
-            header=False,
-            index=False,
-            float_format=lambda x: np.format_float_positional(x, trim='-'),
-        )
-        return
+        print(top_face.shape)
+        print(all_points.shape)
+        stats_points = top_face[:, :2]
 
     else:
         all_points = np.vstack([
             mesh.global_boundary_points,
             mesh.global_inner_points,
         ])
+        stats_points = all_points # setting stats points explicitly to avoid plotting confusion
         if not static:
             all_points = np.concatenate([all_points, np.vstack([dynamic_region.filled_points for dynamic_region in mesh.dynamic_regions])], axis=0)
+
 
 
 
@@ -122,7 +125,7 @@ def generate(csv, static, step_size, out):
          float_format=lambda x: np.format_float_positional(x, trim='-'),
     )
 
-    stats = Stats(all_points, mesh.mesh, buffer=step_size*0.01)
+    stats = Stats(stats_points, mesh.mesh, buffer=step_size*0.01)
     fig, ax = reset_plots()
     delaunay_out = out + "tri.png"
     stats.plot_delaunay(ax=ax)

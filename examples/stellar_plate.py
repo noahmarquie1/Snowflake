@@ -44,7 +44,7 @@ stats = Stats(all_points, mesh.mesh, buffer=STEP_SIZE*0.01)
 fig, ax = plt.subplots(1,1)
 delaunay_out = "out/tri.png"
 fig.set_figwidth(10)
-fig.set_figheight(20)
+fig.set_figheight(10)
 stats.plot_delaunay(ax=ax)
 plt.savefig(delaunay_out)
 print(f"Delaunay Triangulation saved to {delaunay_out}.")

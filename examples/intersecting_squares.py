@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from geometry.mesh_geometry import Rect, Mesh
 from geometry.strict_mesh import StrictMesh
 from geometry.stats import Stats
+import pandas as pd
 
 plt.style.use("seaborn-v0_8")
 
@@ -29,6 +30,9 @@ all_points = np.vstack([
     strict_mesh.global_inner_points,
     np.vstack([dynamic_region.filled_points for dynamic_region in strict_mesh.dynamic_regions]),
 ])
+
+points_df = pd.DataFrame(all_points)
+points_df.to_csv("out/points.csv", header=False, index=False)
 
 fig, ax = plt.subplots(1,1)
 stats = Stats(all_points, strict_mesh.mesh)
