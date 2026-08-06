@@ -92,7 +92,7 @@ def generate(csv, static, step_size, out):
         n_wall_steps = int((z_max - z_min) / step_size)
 
         face = mesh.global_inner_points
-        if not static:
+        if not static and len(mesh.dynamic_regions) > 0:
             face = np.concatenate([face, np.vstack([dynamic_region.filled_points for dynamic_region in mesh.dynamic_regions])], axis=0)
 
 
