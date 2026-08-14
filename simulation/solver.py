@@ -22,10 +22,10 @@ class PointCloudSolver:
 
         # Physics and JAX Setup
         L = np.sqrt((polygon.bounds[2] - polygon.bounds[0])**2 + (polygon.bounds[3] - polygon.bounds[1])**2)
-        alpha = 20
-        beta = 1e2
+        alpha = 10
+        beta = 10
 
-        self.vel_threshold = 10*L
+        self.vel_threshold = L
 
         R = alpha
         D = beta / L

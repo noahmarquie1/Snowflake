@@ -3,7 +3,7 @@ from importlib.metadata import version
 from geometry.hex_geometry import Hexagon
 from geometry.rect_geometry import Rect
 from geometry.strict_mesh import StrictMesh
-from geometry.base_geometry import extrude
+from geometry.base_geometry import extrude, plot_3d_element
 from geometry.stats import Stats
 import os
 import matplotlib.pyplot as plt
@@ -35,7 +35,7 @@ def print_version():
 
 
 # Main CLI function
-def generate(csv, static, step_size, out):
+def generate(csv, static, step_size, out, extrude_depth=None):
     if out:
         out = format_out_dir(out)
     else:
@@ -76,7 +76,7 @@ def generate(csv, static, step_size, out):
         shape.transform((trans_x, trans_y), theta)
         shape_list.append(shape)
 
-    mesh = StrictMesh(shape_list, dynamic=not static)
+    mesh = StrictMesh(shape_list, dynamic=(not static))
 
     plt.style.use("seaborn-v0_8")
     fig, ax = reset_plots()
@@ -84,9 +84,17 @@ def generate(csv, static, step_size, out):
     mesh.visualize(ax)
     plt.savefig(plot_out)
     print(f"Plot saved to {plot_out}.")
-
     stats_points = None
-    if depth:
+
+    if extrude_depth is not None:
+        inner_points = np.column_stack([mesh.global_inner_points, np.zeros(mesh.global_inner_points.shape[0])])
+        boundary_points = extrude(mesh.global_boundary_points, max(3, int(extrude_depth / step_size)), -extrude_depth / 2, extrude_depth / 2)
+        all_points = np.vstack([inner_points, boundary_points])
+
+        fig, ax = plot_3d_element(edge_points=mesh.global_boundary_points, inner_points=mesh.global_inner_points, depth=extrude_depth, step_size=step_size)
+        plt.savefig(out + "3d_plot.png")
+
+    elif depth is not None:
         z_max = depth / 2
         z_min = -depth / 2
         n_wall_steps = int((z_max - z_min) / step_size)
@@ -119,25 +127,26 @@ def generate(csv, static, step_size, out):
 
     points_df = pd.DataFrame(all_points)
     points_df.to_csv(
-        "out/points.csv",
+        out + "points.csv",
         header=False,
         index=False,
          float_format=lambda x: np.format_float_positional(x, trim='-'),
     )
 
-    stats = Stats(stats_points, mesh.mesh, buffer=step_size*0.01)
-    fig, ax = reset_plots()
-    delaunay_out = out + "tri.png"
-    stats.plot_delaunay(ax=ax)
-    plt.savefig(delaunay_out)
-    print(f"Delaunay Triangulation saved to {delaunay_out}.")
+    if not extrude_depth:
+        stats = Stats(stats_points, mesh.mesh, buffer=step_size*0.01)
+        fig, ax = reset_plots()
+        delaunay_out = out + "tri.png"
+        stats.plot_delaunay(ax=ax)
+        plt.savefig(delaunay_out)
+        print(f"Delaunay Triangulation saved to {delaunay_out}.")
 
-    plt.close('all')
-    fig, ax = plt.subplots(1,1)
-    pdf_out = out + "pdf.png"
-    stats.plot_dists_pdf(ax)
-    plt.savefig(pdf_out)
-    print(f"PDF saved to {pdf_out}.")
+        plt.close('all')
+        fig, ax = plt.subplots(1,1)
+        pdf_out = out + "pdf.png"
+        stats.plot_dists_pdf(ax)
+        plt.savefig(pdf_out)
+        print(f"PDF saved to {pdf_out}.")
 
 
 def main():
@@ -173,6 +182,13 @@ def main():
         help="Specifies file to be written to. Uses 'out/' by defualt."
     )
 
+    gen_parser.add_argument(
+        "--extrude",
+        required=False,
+        type=float,
+        help="Specifies shape to be extruded in 3D with a target depth"
+    )
+
 
     args = parser.parse_args()
 
@@ -185,4 +201,5 @@ def main():
             static=args.static,
             step_size=args.step_size,
             out=args.out,
+            extrude_depth=args.extrude
         )

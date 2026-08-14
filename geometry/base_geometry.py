@@ -85,9 +85,9 @@ def transform_points(points, offset, rotation_matrix):
         return points
 
 
-def plot_3d_element(edge_points, inner_points):
-    start_z = -0.1
-    end_z = 0.1
+def plot_3d_element(edge_points, inner_points, depth, step_size=0.01):
+    start_z = -depth / 2
+    end_z = depth / 2
 
     poly = Polygon(edge_points)
     x_bounds = (poly.bounds[0] - 0.1, poly.bounds[2] + 0.1)
@@ -96,7 +96,8 @@ def plot_3d_element(edge_points, inner_points):
     plot_height = max(poly.bounds[2] - poly.bounds[0], poly.bounds[3] - poly.bounds[1])
     z_bounds = (-plot_height / 2, plot_height / 2)
 
-    walls = extrude(edge_points, num_steps=3, start_z=start_z, end_z=end_z)
+    num_steps = max(3, int(depth / step_size))
+    walls = extrude(edge_points, num_steps=num_steps, start_z=start_z, end_z=end_z)
     face = np.hstack([inner_points, np.zeros((inner_points.shape[0], 1))])
     top_face = face + np.array([0, 0, end_z])
     bottom_face = face + np.array([0, 0, start_z])
